@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <script src="Scripts/jquery-1.7.2.min.js" type="text/javascript"></script>
+    <script language="javascript" type="text/javascript">
+
+        $.twitter = function (query, callback, options) {
+            
+            var returnObject = {};
+
+            //returnObject.query = query;
+            returnObject.callback = callback;
+            //returnObject.options = options;
+            returnObject.LoadPage = function(pageString) {
+                var twitterSearchPageUrl = "http://search.twitter.com/search.json" + pageString + "&callback=" + this.callback;
+                $("<script>")
+                    .attr("language", "javascript")
+                    .attr("type", "text/javascript")
+                    .attr("src", twitterSearchPageUrl)
+                    .appendTo($("head"));
+            };
+
+            if (query == undefined || query == null || query == "") {
+                throw new Error("search query is not defined!");
+            }
+
+            if (callback == undefined || callback == null || callback == "") {
+                throw new Error("callback function is not defined!");
+            }
+
+            var twitterSearchUrl = "http://search.twitter.com/search.json?q=" + query + "&callback=" + callback;
+            if (options != undefined && options != null) {
+                twitterSearchUrl += "&" + $.param(options);
+            }
+
+            $("<script>")
+                    .attr("language", "javascript")
+                    .attr("type", "text/javascript")
+                    .attr("src", twitterSearchUrl)
+                    .appendTo($("head"));
+            
+            return returnObject;
+        };
+
+        var twitterSearcher;
+        
+        $(function () {
+            $("#ButtonSubmit").click(function (event) {
+                twitterSearcher = $.twitter($("#TextSearch").val(), "OnSearchComplete", { rpp: $("#SelectResultsPerPage").val(), result_type: "recent" });
+            });
+        });
+
+
+        function OnSearchComplete(tweets) {
+            if (tweets != undefined && tweets != null) {
+                $("#TweetsList").html("");
+                $("#PageCountContainer").show();
+                $("#PageCount").text(tweets.page);
+                $("#PrevPageLink").unbind("click");
+                $("#NextPageLink").unbind("click");
+                if (tweets.next_page != undefined && tweets.next_page != null) {
+                    //twitterSearcher.LoadPage(tweets.next_page);
+                    $("#NextPageLink").show();
+                    $("#NextPageLink").click(function () {
+                        
+                        twitterSearcher.LoadPage(tweets.next_page);
+                        return true;
+                    });
+                }
+                else {
+                    $("#NextPageLink").hide();
+                }
+                
+                if (tweets.previous_page != undefined && tweets.previous_page != null) {
+                    //twitterSearcher.LoadPage(tweets.next_page);
+                    $("#PrevPageLink").show();
+                    $("#PrevPageLink").click(function () {
+                        
+                        twitterSearcher.LoadPage(tweets.previous_page);
+                        return true;
+                    });
+                }
+                else {
+                    $("#PrevPageLink").hide();
+                }
+                
+                for (var i = 0; i < tweets.results.length; i++) {
+                    $("#TweetsList").append($("<li>").html("<img src='" + tweets.results[i].profile_image_url + "' /> " + tweets.results[i].text));
+                }
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <input id="TextSearch" type="text" />
+    <input id="ButtonSubmit" type="button" value="Search" />
+    <select id="SelectResultsPerPage">
+        <option value="10">10 Results</option>
+        <option value="50">50 Results</option>
+        <option value="70">70 Results</option>
+        <option value="100">100 Results</option>
+    </select>
+    <ol id="TweetsList"></ol>
+    <div>
+        <a style="display:none" id="PrevPageLink" href="javascript:;">Prev. Page</a>
+        <span style="display:none" id="PageCountContainer"> <span id="PageCount"></span> </span>
+        <a style="display:none" id="NextPageLink" href="javascript:;">Next Page</a>
+    </div>
+</body>
+</html>
